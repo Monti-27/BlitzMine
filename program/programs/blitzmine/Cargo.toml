@@ -1,0 +1,24 @@
+[package]
+name = "blitzmine"
+version = "0.1.0"
+description = "Blitzmine — real-time competitive mining on Solana, powered by MagicBlock Ephemeral Rollups"
+edition = "2021"
+
+[lib]
+crate-type = ["cdylib", "lib"]
+name = "blitzmine"
+
+[features]
+no-entrypoint = []
+no-idl = []
+no-log-ix-name = []
+cpi = ["no-entrypoint"]
+default = []
+idl-build = ["anchor-lang/idl-build"]
+local-e2e = []
+local-ui = []
+
+[dependencies]
+anchor-lang = { version = "0.32.1", features = ["init-if-needed"] }
+ephemeral-rollups-sdk = { version = "0.16.2", features = ["anchor-compat", "vrf"] }
+solana-keccak-hasher = "2.2.1"

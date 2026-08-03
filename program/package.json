@@ -1,0 +1,24 @@
+{
+  "name": "@blitzmine/program-tests",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "test": "bunx ts-mocha -p ./tsconfig.json -t 1000000 tests/blitzmine.ts",
+    "test:e2e:local": "bunx ts-mocha -p ./tsconfig.json -t 1000000 tests/full-cycle.ts",
+    "cycle:local": "node ./scripts/local-e2e.mjs",
+    "ui:local": "node ./scripts/local-e2e.mjs --browser"
+  },
+  "dependencies": {
+    "@coral-xyz/anchor": "^0.32.1",
+    "@solana/web3.js": "^1.87.0"
+  },
+  "devDependencies": {
+    "@types/chai": "^4.3.0",
+    "@types/mocha": "^10.0.0",
+    "@types/node": "^25.2.1",
+    "chai": "^4.3.0",
+    "mocha": "^10.2.0",
+    "ts-mocha": "^10.0.0",
+    "typescript": "^5.3.0"
+  }
+}
