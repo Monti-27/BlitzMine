@@ -1,0 +1,51 @@
+# Dependencies
+node_modules/
+.pnp
+.pnp.js
+
+# Build outputs
+dist/
+target/
+.anchor/
+.next/
+
+# Environment
+.env
+.env.local
+.env.*.local
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+
+# Test
+coverage/
+
+# Solana
+program/target/
+program/.anchor/
+program/.local-e2e/
+program/magicblock-test-storage/
+program/*-keypair.json
+program/**/*-keypair.json
+test-ledger/
+
+# Rust
+**/*.rs.bk
+reference/
+.claude/
+.cursor/
+.orchids/
+.superstack/
+backups/
+FRONTEND.MD

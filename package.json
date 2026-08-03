@@ -1,0 +1,11 @@
+{
+  "name": "blitzmine",
+  "private": true,
+  "packageManager": "bun@1.2.21",
+  "scripts": {
+    "dev:local": "node program/scripts/local-e2e.mjs --browser",
+    "test:protocol": "cd program && bun run cycle:local",
+    "test:backend": "cd backend && bun run test -- --runInBand",
+    "test:frontend": "cd frontend && bun run test"
+  }
+}
