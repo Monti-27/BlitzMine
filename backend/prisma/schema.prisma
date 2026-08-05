@@ -1,0 +1,276 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+model Round {
+  id               Int       @id
+  deployed         Json
+  slotHash         String?   @map("slot_hash")
+  vrfHash          String?   @map("vrf_hash")
+  count            Json
+  expiresAt        BigInt?   @map("expires_at")
+  motherlode       BigInt    @default(0)
+  rentPayer        String?   @map("rent_payer")
+  topMiner         String?   @map("top_miner")
+  topMinerReward   BigInt    @default(0) @map("top_miner_reward")
+  totalDeployed    BigInt    @default(0) @map("total_deployed")
+  totalMiners      Int       @default(0) @map("total_miners")
+  totalVaulted     BigInt    @default(0) @map("total_vaulted")
+  totalWinnings    BigInt    @default(0) @map("total_winnings")
+  winningSquare    Int?      @map("winning_square")
+  isSplitReward    Boolean   @default(false) @map("is_split_reward")
+  didHitMotherlode Boolean   @default(false) @map("did_hit_motherlode")
+  status           String    @default("pending")
+  startedAt        DateTime? @map("started_at")
+  endedAt          DateTime? @map("ended_at")
+  createdAt        DateTime  @default(now()) @map("created_at")
+  updatedAt        DateTime  @updatedAt @map("updated_at")
+
+  deployments  Deployment[]
+  participants RoundParticipant[]
+  rewards      Reward[]
+  blocks       RoundBlock[]
+
+  @@index([status])
+  @@index([startedAt])
+  @@index([endedAt])
+  @@map("rounds")
+}
+
+model RoundBlock {
+  roundId     Int    @map("round_id")
+  blockNumber Int    @map("block_number")
+  solDeployed BigInt @default(0) @map("sol_deployed")
+  minerCount  Int    @default(0) @map("miner_count")
+
+  round Round @relation(fields: [roundId], references: [id], onDelete: Cascade)
+
+  @@id([roundId, blockNumber])
+  @@map("round_blocks")
+}
+
+model Miner {
+  wallet             String    @id
+  rewardsSol         BigInt    @default(0) @map("rewards_sol")
+  lifetimeRewardsSol BigInt    @default(0) @map("lifetime_rewards_sol")
+  lifetimeDeployed   BigInt    @default(0) @map("lifetime_deployed")
+  roundsPlayed       Int       @default(0) @map("rounds_played")
+  roundsWon          Int       @default(0) @map("rounds_won")
+  lastActive         DateTime? @map("last_active")
+  createdAt          DateTime  @default(now()) @map("created_at")
+  updatedAt          DateTime  @updatedAt @map("updated_at")
+
+  deployments    Deployment[]
+  participations RoundParticipant[]
+  rewards        Reward[]
+  chatMessages   ChatMessage[]
+
+  @@index([lifetimeRewardsSol(sort: Desc)])
+  @@map("miners")
+}
+
+model Deployment {
+  id        Int      @id @default(autoincrement())
+  roundId   Int      @map("round_id")
+  wallet    String
+  squares   Json
+  amount    BigInt
+  txHash    String?  @unique(map: "deployments_tx_hash_key") @map("tx_hash")
+  slot      BigInt?  @map("slot")
+  source    String   @default("manual")
+  createdAt DateTime @default(now()) @map("created_at")
+
+  round Round @relation(fields: [roundId], references: [id], onDelete: Cascade)
+  miner Miner @relation(fields: [wallet], references: [wallet], onDelete: Cascade)
+
+  @@index([roundId])
+  @@index([wallet])
+  @@index([createdAt])
+  @@map("deployments")
+}
+
+model RoundParticipant {
+  roundId   Int      @map("round_id")
+  wallet    String
+  createdAt DateTime @default(now()) @map("created_at")
+
+  round Round @relation(fields: [roundId], references: [id], onDelete: Cascade)
+  miner Miner @relation(fields: [wallet], references: [wallet], onDelete: Cascade)
+
+  @@id([roundId, wallet])
+  @@index([wallet])
+  @@map("round_participants")
+}
+
+model Reward {
+  id           Int       @id @default(autoincrement())
+  roundId      Int       @map("round_id")
+  wallet       String
+  solAmount    BigInt    @default(0) @map("sol_amount")
+  claimedAt    DateTime? @map("claimed_at")
+  claimTxHash  String?   @map("claim_tx_hash")
+  isMotherlode Boolean   @default(false) @map("is_motherlode")
+  createdAt    DateTime  @default(now()) @map("created_at")
+
+  round Round @relation(fields: [roundId], references: [id], onDelete: Cascade)
+  miner Miner @relation(fields: [wallet], references: [wallet], onDelete: Cascade)
+
+  @@unique([roundId, wallet], map: "rewards_round_id_wallet_key")
+  @@index([wallet])
+  @@index([roundId])
+  @@index([claimedAt])
+  @@index([wallet, claimedAt])
+  @@map("rewards")
+}
+
+model ChatMessage {
+  id                String   @id @default(cuid())
+  sender            String
+  username          String?
+  content           String
+  signature         String
+  avatarUrlSnapshot String?  @map("avatar_url_snapshot")
+  authSessionId     String?  @map("auth_session_id")
+  authProofType     String?  @map("auth_proof_type")
+  room              String   @default("general")
+  edited            Boolean  @default(false)
+  deleted           Boolean  @default(false)
+  createdAt         DateTime @default(now()) @map("created_at")
+  replyToId         String?  @map("reply_to_id")
+
+  replyTo   ChatMessage?   @relation("MessageReplies", fields: [replyToId], references: [id], onDelete: SetNull)
+  replies   ChatMessage[]  @relation("MessageReplies")
+  reactions ChatReaction[]
+  miner     Miner          @relation(fields: [sender], references: [wallet], onDelete: Cascade)
+
+  @@index([room])
+  @@index([room, createdAt], map: "chat_messages_room_created_at_idx")
+  @@index([sender])
+  @@index([createdAt])
+  @@index([authSessionId])
+  @@map("chat_messages")
+}
+
+model ChatReaction {
+  id            String   @id @default(cuid())
+  messageId     String   @map("message_id")
+  emoji         String
+  reactorWallet String   @map("reactor_wallet")
+  createdAt     DateTime @default(now()) @map("created_at")
+
+  message ChatMessage @relation(fields: [messageId], references: [id], onDelete: Cascade)
+
+  @@unique([messageId, emoji, reactorWallet], map: "chat_reactions_msg_emoji_wallet_key")
+  @@index([messageId])
+  @@map("chat_reactions")
+}
+
+model UserProfile {
+  wallet             String    @id
+  username           String?   @unique
+  usernameNormalized String?   @unique @map("username_normalized")
+  bio                String?
+  xHandle            String?   @map("x_handle")
+  telegramHandle     String?   @map("telegram_handle")
+  discordHandle      String?   @map("discord_handle")
+  website            String?
+  avatarUrl          String?   @map("avatar_url")
+  bannerUrl          String?   @map("banner_url")
+  usernameChangedAt  DateTime? @map("username_changed_at")
+  createdAt          DateTime  @default(now()) @map("created_at")
+  updatedAt          DateTime  @updatedAt @map("updated_at")
+
+  @@index([updatedAt])
+  @@map("user_profiles")
+}
+
+model RateLimit {
+  wallet      String
+  actionType  String   @map("action_type")
+  count       Int      @default(0)
+  windowStart DateTime @default(now()) @map("window_start")
+
+  @@id([wallet, actionType])
+  @@map("rate_limits")
+}
+
+model WalletChallenge {
+  id         String    @id @default(cuid())
+  wallet     String
+  message    String
+  expiresAt  DateTime  @map("expires_at")
+  consumedAt DateTime? @map("consumed_at")
+  createdAt  DateTime  @default(now()) @map("created_at")
+
+  @@index([wallet])
+  @@index([expiresAt])
+  @@index([consumedAt])
+  @@map("wallet_challenges")
+}
+
+model AuthSession {
+  id                  String    @id
+  wallet              String
+  expiresAt           DateTime  @map("expires_at")
+  refreshTokenHash    String?   @map("refresh_token_hash")
+  refreshExpiresAt    DateTime? @map("refresh_expires_at")
+  familyId            String?   @map("family_id")
+  parentSessionId     String?   @map("parent_session_id")
+  replacedBySessionId String?   @map("replaced_by_session_id")
+  revokedAt           DateTime? @map("revoked_at")
+  revokedReason       String?   @map("revoked_reason")
+  lastSeenAt          DateTime? @map("last_seen_at")
+  createdAt           DateTime  @default(now()) @map("created_at")
+
+  @@index([wallet])
+  @@index([expiresAt])
+  @@index([refreshExpiresAt])
+  @@index([familyId])
+  @@index([revokedAt])
+  @@map("auth_sessions")
+}
+
+model JobLease {
+  name        String    @id
+  owner       String
+  expiresAt   DateTime  @map("expires_at")
+  heartbeatAt DateTime? @map("heartbeat_at")
+  createdAt   DateTime  @default(now()) @map("created_at")
+  updatedAt   DateTime  @updatedAt @map("updated_at")
+
+  @@index([expiresAt])
+  @@map("job_leases")
+}
+
+model FailedTransaction {
+  id             Int       @id @default(autoincrement())
+  txType         String    @map("tx_type")
+  idempotencyKey String?   @unique(map: "failed_transactions_idempotency_key") @map("idempotency_key")
+  params         Json
+  errorMessage   String?   @map("error_message")
+  retryCount     Int       @default(0) @map("retry_count")
+  status         String    @default("pending")
+  createdAt      DateTime  @default(now()) @map("created_at")
+  lastRetryAt    DateTime? @map("last_retry_at")
+
+  @@index([status])
+  @@index([createdAt])
+  @@map("failed_transactions")
+}
+
+model IndexerCursor {
+  key       String   @id
+  slot      BigInt   @default(0)
+  signature String?  @map("signature")
+  metadata  Json?
+  updatedAt DateTime @updatedAt @map("updated_at")
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@map("indexer_cursors")
+}
