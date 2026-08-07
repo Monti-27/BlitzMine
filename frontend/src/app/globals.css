@@ -1,0 +1,543 @@
+@import "tailwindcss";
+@import "tw-animate-css";
+@import "shadcn/tailwind.css";
+@plugin "daisyui" {
+  themes: false;
+  include: skeleton;
+  logs: false;
+}
+
+@theme {
+  --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji";
+  --font-display: "Space Grotesk", sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+}
+
+/* ── Custom Fonts ── */
+
+@font-face {
+  font-family: "DazzleUnicase";
+  src: url("/fonts/DazzleUnicase-Bold.woff2") format("woff2");
+  font-weight: 700;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "DazzleUnicase";
+  src: url("/fonts/DazzleUnicase-Medium.woff2") format("woff2");
+  font-weight: 500;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "SF Pro Rounded";
+  src: url("/fonts/SFProRounded-Regular.woff2") format("woff2");
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "SF Pro Rounded";
+  src: url("/fonts/SFProRounded-Medium.woff2") format("woff2");
+  font-weight: 500;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "SF Pro Rounded";
+  src: url("/fonts/SFProRounded-Semibold.woff2") format("woff2");
+  font-weight: 600;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "SF Pro Rounded";
+  src: url("/fonts/SFProRounded-Bold.woff2") format("woff2");
+  font-weight: 700;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "SF Pro Rounded";
+  src: url("/fonts/SFProRounded-Heavy.woff2") format("woff2");
+  font-weight: 800;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "SF Pro Rounded";
+  src: url("/fonts/SFProRounded-Black.woff2") format("woff2");
+  font-weight: 900;
+  font-style: normal;
+  font-display: swap;
+}
+
+@custom-variant dark (&:is(.dark *));
+
+@theme inline {
+  --color-background: hsl(var(--background));
+  --color-foreground: hsl(var(--foreground));
+  --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji";
+  --font-display: "Space Grotesk", sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+  --color-sidebar-ring: hsl(var(--sidebar-ring));
+  --color-sidebar-border: hsl(var(--sidebar-border));
+  --color-sidebar-accent-foreground: hsl(var(--sidebar-accent-foreground));
+  --color-sidebar-accent: hsl(var(--sidebar-accent));
+  --color-sidebar-primary-foreground: hsl(var(--sidebar-primary-foreground));
+  --color-sidebar-primary: hsl(var(--sidebar-primary));
+  --color-sidebar-foreground: hsl(var(--sidebar-foreground));
+  --color-sidebar: hsl(var(--sidebar-background));
+  --color-chart-5: hsl(var(--chart-5));
+  --color-chart-4: hsl(var(--chart-4));
+  --color-chart-3: hsl(var(--chart-3));
+  --color-chart-2: hsl(var(--chart-2));
+  --color-chart-1: hsl(var(--chart-1));
+  --color-ring: hsl(var(--ring));
+  --color-input: hsl(var(--input));
+  --color-border: hsl(var(--border));
+  --color-destructive: hsl(var(--destructive));
+  --color-accent-foreground: hsl(var(--accent-foreground));
+  --color-accent: hsl(var(--accent));
+  --color-muted-foreground: hsl(var(--muted-foreground));
+  --color-muted: hsl(var(--muted));
+  --color-secondary-foreground: hsl(var(--secondary-foreground));
+  --color-secondary: hsl(var(--secondary));
+  --color-primary-foreground: hsl(var(--primary-foreground));
+  --color-primary: hsl(var(--primary));
+  --color-popover-foreground: hsl(var(--popover-foreground));
+  --color-popover: hsl(var(--popover));
+  --color-card-foreground: hsl(var(--card-foreground));
+  --color-card: hsl(var(--card));
+  --color-emerald: hsl(var(--emerald));
+  --color-emerald-foreground: hsl(var(--emerald-foreground));
+
+  --color-silver: hsl(var(--silver-glow));
+  --color-ice: hsl(var(--ice-glow));
+  --color-rarity-common: hsl(var(--tier-common));
+  --color-rarity-uncommon: hsl(var(--tier-uncommon));
+  --color-rarity-rare: hsl(var(--tier-rare));
+  --color-rarity-epic: hsl(var(--tier-epic));
+  --color-rarity-legendary: hsl(var(--tier-legendary));
+
+  --radius-sm: calc(var(--radius) - 4px);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) + 4px);
+  --radius-2xl: calc(var(--radius) + 8px);
+  --radius-3xl: calc(var(--radius) + 12px);
+  --radius-4xl: calc(var(--radius) + 16px);
+}
+
+@layer base {
+  :root {
+    /* Core palette - Deep obsidian base */
+    --background: 220 15% 6%;
+    /* Deep blue-black */
+    --foreground: 210 20% 98%;
+    /* Soft white with slight blue */
+
+    /* Panel system */
+    --card: 220 12% 10%;
+    /* Dark slate */
+    --card-foreground: 210 20% 98%;
+
+    --popover: 220 12% 10%;
+    --popover-foreground: 210 20% 98%;
+
+    /* Primary - Pure silver/platinum */
+    --primary: 210 15% 75%;
+    /* Polished silver */
+    --primary-foreground: 220 15% 8%;
+
+    /* Secondary - Deeper silver */
+    --secondary: 215 10% 55%;
+    /* Gunmetal */
+    --secondary-foreground: 210 20% 98%;
+
+    --muted: 220 10% 14%;
+    --muted-foreground: 210 10% 50%;
+
+    /* Accent - Icy cyan highlight */
+    --accent: 195 70% 55%;
+    --accent-foreground: 220 15% 8%;
+
+    /* Status colors */
+    --destructive: 0 65% 55%;
+    --destructive-foreground: 0 0% 100%;
+
+    --border: 220 10% 18%;
+    --input: 220 10% 18%;
+    --ring: 210 15% 75%;
+
+    --radius: 0.375rem;
+
+    /* Stats */
+    --emerald: 160 60% 45%;
+    --emerald-foreground: 220 15% 8%;
+
+    /* Charts (Mapped approximately) */
+    --chart-1: 210 15% 75%;
+    --chart-2: 160 60% 45%;
+    --chart-3: 210 80% 60%;
+    --chart-4: 280 55% 60%;
+    --chart-5: 0 65% 55%;
+
+    /* Rarity tiers */
+    --tier-common: 210 8% 50%;
+    --tier-uncommon: 160 50% 45%;
+    --tier-rare: 210 80% 60%;
+    --tier-epic: 280 55% 60%;
+    --tier-legendary: 210 15% 85%;
+
+    /* Glows */
+    --silver-glow: 210 20% 75%;
+    --ice-glow: 195 70% 55%;
+
+    /* Sidebar */
+    --sidebar-background: 220 15% 5%;
+    --sidebar-foreground: 210 20% 98%;
+    --sidebar-primary: 210 15% 75%;
+    --sidebar-primary-foreground: 220 15% 8%;
+    --sidebar-accent: 220 10% 12%;
+    --sidebar-accent-foreground: 210 20% 98%;
+    --sidebar-border: 220 10% 18%;
+    --sidebar-ring: 210 15% 75%;
+
+    /* DaisyUI skeleton variable mapping (keep current app theme) */
+    --color-base-100: hsl(var(--card));
+    --color-base-300: hsl(var(--muted));
+    --color-base-content: hsl(var(--foreground));
+    --radius-box: 0.75rem;
+  }
+
+  /* Force dark mode behavior - consistent in this theme */
+  .dark {
+    --background: 220 15% 6%;
+    --foreground: 210 20% 98%;
+    --card: 220 12% 10%;
+    --card-foreground: 210 20% 98%;
+    --popover: 220 12% 10%;
+    --popover-foreground: 210 20% 98%;
+    --primary: 210 15% 75%;
+    --primary-foreground: 220 15% 8%;
+    --secondary: 215 10% 55%;
+    --secondary-foreground: 210 20% 98%;
+    --muted: 220 10% 14%;
+    --muted-foreground: 210 10% 50%;
+    --accent: 195 70% 55%;
+    --accent-foreground: 220 15% 8%;
+    --destructive: 0 65% 55%;
+    --destructive-foreground: 0 0% 100%;
+    --border: 220 10% 18%;
+    --input: 220 10% 18%;
+    --ring: 210 15% 75%;
+    --emerald: 160 60% 45%;
+    --emerald-foreground: 220 15% 8%;
+    --chart-1: 210 15% 75%;
+    --chart-2: 160 60% 45%;
+    --chart-3: 210 80% 60%;
+    --chart-4: 280 55% 60%;
+    --chart-5: 0 65% 55%;
+    --sidebar-background: 220 15% 5%;
+    --sidebar-foreground: 210 20% 98%;
+    --sidebar-primary: 210 15% 75%;
+    --sidebar-primary-foreground: 220 15% 8%;
+    --sidebar-accent: 220 10% 12%;
+    --sidebar-accent-foreground: 210 20% 98%;
+    --sidebar-border: 220 10% 18%;
+    --sidebar-ring: 210 15% 75%;
+    --color-base-100: hsl(var(--card));
+    --color-base-300: hsl(var(--muted));
+    --color-base-content: hsl(var(--foreground));
+    --radius-box: 0.75rem;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+
+  body {
+    @apply bg-background text-foreground font-sans;
+  }
+
+  h1,
+  h2,
+  h3,
+  h4,
+  h5,
+  h6 {
+    @apply font-display;
+  }
+}
+
+/* Scrollbar */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: hsl(var(--border));
+  border-radius: 3px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: hsl(var(--muted-foreground) / 0.5);
+}
+
+/* Utilities */
+.tabular-nums {
+  font-variant-numeric: tabular-nums;
+}
+
+/* Frosted glass panel */
+.frosted-panel {
+  background: oklch(0.20 0.005 260 / 0.6);
+  backdrop-filter: blur(16px);
+  border: 1px solid oklch(0.30 0.005 260 / 0.5);
+}
+
+.scrollbar-hide {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;
+}
+
+/* Hide number input spinners */
+input[type="number"]::-webkit-inner-spin-button,
+input[type="number"]::-webkit-outer-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+input[type="number"] {
+  -moz-appearance: textfield;
+}
+
+/* Gradient Button */
+@layer base {
+  @property --pos-x {
+    syntax: '<percentage>';
+    initial-value: 11.14%;
+    inherits: false;
+  }
+
+  @property --pos-y {
+    syntax: '<percentage>';
+    initial-value: 140%;
+    inherits: false;
+  }
+
+  @property --spread-x {
+    syntax: '<percentage>';
+    initial-value: 150%;
+    inherits: false;
+  }
+
+  @property --spread-y {
+    syntax: '<percentage>';
+    initial-value: 180.06%;
+    inherits: false;
+  }
+
+  @property --color-1 {
+    syntax: '<color>';
+    initial-value: #f1f5f9;
+    /* Slate 100 - Highlight */
+    inherits: false;
+  }
+
+  @property --color-2 {
+    syntax: '<color>';
+    initial-value: #cbd5e1;
+    /* Slate 300 */
+    inherits: false;
+  }
+
+  @property --color-3 {
+    syntax: '<color>';
+    initial-value: #94a3b8;
+    /* Slate 400 */
+    inherits: false;
+  }
+
+  @property --color-4 {
+    syntax: '<color>';
+    initial-value: #475569;
+    /* Slate 600 */
+    inherits: false;
+  }
+
+  @property --color-5 {
+    syntax: '<color>';
+    initial-value: #0f172a;
+    /* Slate 900 - Base */
+    inherits: false;
+  }
+
+  @property --border-angle {
+    syntax: '<angle>';
+    initial-value: 20deg;
+    inherits: true;
+  }
+
+  @property --gb-border-1 {
+    syntax: '<color>';
+    initial-value: hsla(0, 0%, 100%, 0.3);
+    /* Pure White 30% */
+    inherits: true;
+  }
+
+  @property --gb-border-2 {
+    syntax: '<color>';
+    initial-value: hsla(210, 20%, 98%, 0.8);
+    /* Off-White 80% */
+    inherits: true;
+  }
+
+  @property --stop-1 {
+    syntax: '<percentage>';
+    initial-value: 37.35%;
+    inherits: false;
+  }
+
+  @property --stop-2 {
+    syntax: '<percentage>';
+    initial-value: 61.36%;
+    inherits: false;
+  }
+
+  @property --stop-3 {
+    syntax: '<percentage>';
+    initial-value: 78.42%;
+    inherits: false;
+  }
+
+  @property --stop-4 {
+    syntax: '<percentage>';
+    initial-value: 89.52%;
+    inherits: false;
+  }
+
+  @property --stop-5 {
+    syntax: '<percentage>';
+    initial-value: 100%;
+    inherits: false;
+  }
+}
+
+@layer components {
+  .gradient-button {
+    @apply relative appearance-none cursor-pointer;
+    background: radial-gradient(var(--spread-x) var(--spread-y) at var(--pos-x) var(--pos-y),
+        var(--color-1) var(--stop-1),
+        var(--color-2) var(--stop-2),
+        var(--color-3) var(--stop-3),
+        var(--color-4) var(--stop-4),
+        var(--color-5) var(--stop-5));
+    transition:
+      --pos-x 0.5s,
+      --pos-y 0.5s,
+      --spread-x 0.5s,
+      --spread-y 0.5s,
+      --color-1 0.5s,
+      --color-2 0.5s,
+      --color-3 0.5s,
+      --color-4 0.5s,
+      --color-5 0.5s,
+      --border-angle 0.5s,
+      --gb-border-1 0.5s,
+      --gb-border-2 0.5s,
+      --stop-1 0.5s,
+      --stop-2 0.5s,
+      --stop-3 0.5s,
+      --stop-4 0.5s,
+      --stop-5 0.5s;
+  }
+
+  .gradient-button::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+    padding: 1px;
+    background: linear-gradient(var(--border-angle),
+        var(--gb-border-1),
+        var(--gb-border-2));
+    mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+    mask-composite: exclude;
+    pointer-events: none;
+  }
+
+  .gradient-button:hover {
+    --pos-x: 0%;
+    --pos-y: 91.51%;
+    --spread-x: 120.24%;
+    --spread-y: 103.18%;
+    --color-1: #ffffff;
+    /* Pure White Highlight */
+    --color-2: #f1f5f9;
+    /* Slate 100 */
+    --color-3: #cbd5e1;
+    /* Slate 300 */
+    --color-4: #64748b;
+    /* Slate 500 */
+    --color-5: #0f172a;
+    /* Slate 900 Base (for contrast) */
+    --border-angle: 190deg;
+    --gb-border-1: hsla(0, 0%, 100%, 0.6);
+    --gb-border-2: hsla(210, 20%, 98%, 0.9);
+    --stop-1: 0%;
+    --stop-2: 8.8%;
+    --stop-3: 21.44%;
+    --stop-4: 71.34%;
+    --stop-5: 85.76%;
+  }
+
+  .gradient-button-variant {
+    --color-1: #000000;
+    --color-2: #0f172a;
+    --color-3: #1e293b;
+    --color-4: #334155;
+    --border-angle: 200deg;
+    --gb-border-1: hsla(210, 75%, 90%, 0.2);
+    --gb-border-2: hsla(210, 50%, 90%, 0.1);
+  }
+
+  .gradient-button-variant:hover {
+    --pos-x: 0%;
+    --pos-y: 95.51%;
+    --spread-x: 110.24%;
+    --spread-y: 110.2%;
+    --color-1: #000000;
+    --color-2: #334155;
+    --color-3: #1e293b;
+    --color-4: #0f172a;
+    --color-5: #000;
+    --stop-1: 0%;
+    --stop-2: 10%;
+    --stop-3: 35.44%;
+    --stop-4: 71.34%;
+    --stop-5: 90.76%;
+    --border-angle: 210deg;
+    --gb-border-1: hsla(210, 75%, 90%, 0.2);
+    --gb-border-2: hsla(210, 50%, 90%, 0.75);
+  }
+}
