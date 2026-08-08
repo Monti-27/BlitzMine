@@ -35,15 +35,20 @@ export function AppHeader() {
         <Link
           href="/"
           aria-label="BlitzMine home"
-          className="group flex items-center focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/70 focus-visible:ring-offset-2 focus-visible:ring-offset-background rounded-lg"
+          className="group flex items-center gap-1 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/70 focus-visible:ring-offset-2 focus-visible:ring-offset-background rounded-lg"
         >
           {/* Logo carries its own white-to-grey gradient, so no invert filter here. */}
           <img
             src="/blitz-mine-logo.svg"
-            alt="BlitzMine"
+            alt=""
+            aria-hidden="true"
             className="h-20 w-auto select-none transition-opacity duration-200 group-hover:opacity-80"
             draggable={false}
           />
+          {/* Wordmark mirrors the logo's white-to-grey ramp so the lockup reads as one piece. */}
+          <span className="select-none bg-gradient-to-b from-white via-[#F0F3F8] to-[#C6CEDE] bg-clip-text font-brand text-xl leading-none font-bold tracking-[0.06em] text-transparent transition-opacity duration-200 group-hover:opacity-80 md:text-2xl">
+            BLITZMINE
+          </span>
         </Link>
 
         <DesktopNav pathname={pathname} items={navItems} />
