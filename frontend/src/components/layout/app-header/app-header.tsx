@@ -32,13 +32,18 @@ export function AppHeader() {
           )}
         </button>
 
-        <Link href="/" className="flex items-center gap-3">
-          <span className="grid h-10 w-10 place-items-center rounded-xl border border-primary/30 bg-primary/10 font-mono text-lg font-black text-primary">
-            B
-          </span>
-          <span className="font-mono text-xl font-bold tracking-[-0.04em] text-foreground md:text-2xl">
-            BLITZMINE
-          </span>
+        <Link
+          href="/"
+          aria-label="BlitzMine home"
+          className="group flex items-center focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/70 focus-visible:ring-offset-2 focus-visible:ring-offset-background rounded-lg"
+        >
+          {/* Logo artwork is solid black; invert renders it white on the dark shell. */}
+          <img
+            src="/blitz-mine-logo.svg"
+            alt="BlitzMine"
+            className="h-12 w-auto select-none invert transition-opacity duration-200 group-hover:opacity-80"
+            draggable={false}
+          />
         </Link>
 
         <DesktopNav pathname={pathname} items={navItems} />
