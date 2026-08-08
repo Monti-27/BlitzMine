@@ -1,212 +1,116 @@
 # BlitzMine
 
-BlitzMine is a real-time, SOL-only competitive mining game on Solana. Players fund a reusable mining session, delegate its Miner account to a MagicBlock Ephemeral Rollup, and deploy SOL across a 5 by 5 grid during a 60-second round. MagicBlock VRF selects the winning square and the losing pool is shared among winners by contribution.
+A real time mining game on Solana. Everyone plays the same board at the same time, and a round lasts 60 seconds.
 
-The project is being built for Solana Blitz v7, whose required integration is MagicBlock Ephemeral Rollups or Private Ephemeral Rollups. The collaboration theme is represented by simultaneous shared rounds, contribution-weighted rewards, and the live player chat.
+If you have used ore.supply the mining idea will feel familiar, except here you are not mining alone. There is a 5x5 grid, you put SOL on whichever tiles you want, and when the timer hits zero one tile wins. Everyone who backed that tile splits the pot based on how much they put in.
 
-## Product purpose
+Built for Solana Blitz V7, which is themed around collaboration and requires a MagicBlock Ephemeral Rollup integration.
 
-The demo should make one difference immediately visible: after a player starts a mining session, grid deployments execute on an Ephemeral Rollup instead of waiting on base-layer Solana. Every player sees the shared board change in real time while the economically important state remains program-controlled and can be committed back to Solana.
+**Live on devnet:** https://blitzmine.up.railway.app
 
-BlitzMine is not presented as “uncrackable.” The target is a small, auditable trust surface with explicit invariants, authenticated randomness, replay protection, deterministic fallback behavior, and no trusted game server deciding winners or balances.
+| | |
+|---|---|
+| Program ID | `CVud2PiM4hYk2YkDa2DZ2dnJwd9gVCXZFJP18DzE1r4F` |
+| Board account | [`HP84j7GA...cWrxe`](https://explorer.solana.com/address/HP84j7GAHrpxRfdYj8M4pEURggy4v3HbSBvp5t9cWrxe?cluster=devnet) (owned by the MagicBlock delegation program) |
+| API | https://blitz-mine.up.railway.app |
+| Network | devnet |
 
-## Hackathon requirements
+## How the game works
 
-- Build window: August 3 through August 9, 2026.
-- Submission requires a public GitHub repository and a short demo video or live link.
-- The project must integrate MagicBlock ER or PER.
-- Judging emphasizes creativity, technical depth, build quality, and a compelling MagicBlock use case.
-- The submission should clearly show the collaboration angle, not only mention it in copy.
+1. The board has 25 tiles.
+2. You pick one or more tiles you have not used this round and put the same amount of SOL on each.
+3. The first deploy of a round starts the 60 second clock. Before that the board just sits and waits.
+4. Deploys stop exactly at the on chain deadline.
+5. After the deadline the backend asks MagicBlock VRF for randomness.
+6. The VRF callback picks the winning tile on chain.
+7. A 1 percent fee comes off the round.
+8. 10 percent of what is left of the losing pool goes into the motherlode.
+9. Winners get their own SOL back (minus fee) plus a share of the losing pool, weighted by how much they put on the winning tile.
+10. Every round has a 1 in 625 chance of paying out the whole motherlode.
+11. If nobody was on the winning tile, the entire pot goes into the motherlode instead.
+12. If VRF does not come back within 30 seconds the round is cancelled and everyone can recover their principal. It never rerolls the same round.
+13. There is a 15 second break, then the next round.
 
-Official entry points:
+Everything is in integer lamports and SOL is the only asset in the game.
 
-- [MagicBlock announcement](https://x.com/magicblock/status/2083553594889158857)
-- [Hackathon site](https://hackathon.magicblock.app)
-- [Submission site](https://build.magicblock.app)
-- [MagicBlock documentation](https://docs.magicblock.gg)
+## Why MagicBlock
 
-## Game rules
+A shared 60 second round does not really work on base layer Solana. Every move would sit there waiting to confirm and the round would be over before it landed.
 
-1. The board contains 25 squares.
-2. A deploy selects one or more previously unused squares for that miner and assigns the same SOL amount to each selected square.
-3. The first accepted deploy starts the round’s 60-second clock.
-4. Deployments stop exactly at the on-chain `end_ts`.
-5. The lifecycle crank requests scoped MagicBlock VRF after the deadline.
-6. The authenticated VRF callback selects a winning square using domain-separated, rejection-sampled randomness.
-7. A 1% fee is separated from the round.
-8. Ten percent of the post-fee losing pool is added to the motherlode.
-9. Winners receive their fee-adjusted principal on the winning square plus their contribution-weighted share of winnings.
-10. A round has a 1 in 625 chance of paying the accumulated motherlode to its winners.
-11. If the winning square is empty, the post-fee pot is vaulted into the motherlode.
-12. If VRF is not fulfilled within 30 seconds, the round is canceled and every miner can lazily recover the deployed principal through checkpointing. The system never rerolls the same round.
-13. A 15-second intermission follows resolution or cancellation.
+So the whole game gets delegated to a MagicBlock Ephemeral Rollup. The board, the treasury, the round account and each player's mining session all live on the rollup while a round is running. Deploys land there, which is why players see each other's moves instantly, and the state gets committed back down to Solana afterwards.
 
-All monetary calculations use integer lamports, and SOL is the only game asset.
+The winning tile comes from MagicBlock VRF. The backend can only ask for randomness once the deadline has passed. It has no way to pick a tile, and the callback runs on chain, so there is no server sitting in the middle deciding who won.
 
 ## Architecture
 
 ```mermaid
 flowchart LR
-    UI["Next.js client"] -->|"fund and delegate"| SOL["Solana base layer"]
-    UI -->|"deploy and checkpoint"| ER["MagicBlock Ephemeral Rollup"]
+    UI["Next.js client"] -->|"fund, delegate, claim"| SOL["Solana base layer"]
+    UI -->|"deploy, checkpoint"| ER["MagicBlock Ephemeral Rollup"]
     ROUTER["Magic Router"] --> SOL
     ROUTER --> ER
-    CRANK["NestJS lifecycle crank"] -->|"prepare and delegate"| SOL
-    CRANK -->|"VRF request, cancel, commit"| ER
+    CRANK["NestJS lifecycle crank"] -->|"prepare, delegate"| SOL
+    CRANK -->|"request VRF, cancel, commit"| ER
     ER -->|"commit intents"| SOL
-    ER -->|"program events"| INDEXER["Indexer and WebSocket gateway"]
+    ER -->|"program events"| INDEXER["Indexer + WebSocket"]
     INDEXER --> UI
-    VRF["MagicBlock scoped VRF"] -->|"authenticated callback"| ER
+    VRF["MagicBlock VRF"] -->|"authenticated callback"| ER
 ```
 
-### Solana base layer
+**Solana base layer** holds the program, the config, and the accounts before they are delegated. Players fund their miner and claim their SOL here.
 
-- Program deployment and upgrade authority.
-- `Config`, initial `Board`, `Treasury`, and prepared `Round` accounts.
-- Miner funding before delegation.
-- Delegation records and committed checkpoints.
-- SOL claims after Miner undelegation.
+**Ephemeral Rollup** holds the delegated board, treasury, round and miner accounts while a round is live. Deploys, VRF settlement and checkpoints all happen here.
 
-### Ephemeral Rollup
+**Backend** is a NestJS service. It resolves the active rollup through Magic Router, prepares and delegates the next round before it is needed, asks for randomness once the deadline passes, cancels timed out rounds, commits finished rounds back to Solana, and indexes program events out to the frontend over WebSocket. It never signs a player's deploy and it cannot pick a winner.
 
-- Delegated `Board`, `Treasury`, `Round`, and `Miner` accounts.
-- Timestamp-based round enforcement.
-- Replay-protected deploys.
-- VRF request, callback, cancellation, reward accounting, and checkpointing.
-- Commit and commit-plus-undelegate intents.
+**Frontend** is a Next.js client using Privy for wallets. It funds and delegates the miner, reads the miner nonce off the rollup, and sends deploys straight to the rollup.
 
-### Backend
+### What runs where
 
-- Resolves the active ER through Magic Router.
-- Automatically delegates the core game accounts on first lifecycle startup.
-- Prepares and delegates the next Round account before it is needed.
-- Requests randomness after the on-chain deadline.
-- Cancels timed-out randomness requests.
-- Commits completed game state to Solana.
-- Indexes only authenticated program events and broadcasts live deploy and round-end messages.
-- Never signs player deploys or chooses a winner.
+| Instruction | Runs on |
+|---|---|
+| `initialize`, `prepare_round`, `fund_miner`, `claim_sol` | base layer |
+| `delegate_board`, `delegate_treasury`, `delegate_round`, `delegate_miner` | base layer |
+| `deploy`, `checkpoint` | rollup |
+| `request_randomness`, `callback_resolve_round`, `cancel_round` | rollup |
+| `commit_game`, `commit_checkpoint`, `undelegate_miner` | rollup, commits to base |
 
-### Frontend
+## What keeps it fair
 
-- Presents a purpose-built shared grid, timer, live chat, and winner reveal.
-- Funds a Miner PDA on base Solana.
-- Delegates the Miner PDA through the canonical MagicBlock delegation accounts.
-- Resolves the miner’s ER endpoint with Magic Router.
-- Reads the Miner nonce from the ER and includes it in every deploy.
-- Prompts the owner to checkpoint a previous round before entering a new one.
-- Undelegates, refills, and re-delegates a settled Miner when its session balance is insufficient.
-- Trusts the authenticated `FulfillRoundEvent` for winner display; it does not reconstruct ORAO results in the browser.
+- Only the fixed admin key can initialize and delegate the shared game accounts.
+- A miner can only ever spend the SOL sitting in its own program owned account.
+- Every deploy carries an `expected_nonce`. A stale or replayed transaction fails.
+- Masks have to be non zero and inside 25 bits, and you pay for a tile at most once per round.
+- Phases are decided by on chain timestamps, not by browser time or slot numbers.
+- Randomness is only requested after the deadline, and the callback is authenticated, bound to the round and request nonce, and idempotent.
+- Draws use domain separation and rejection sampling instead of plain modulo, so there is no bias.
+- Cancellation is only allowed after the fixed VRF timeout, and it refunds rather than rerolling.
+- Payout maths is checked integer arithmetic. There is a unit test asserting no lamport is created or lost.
+- Deploy reports coming from the client are re-derived from the on chain transaction before anything is written to the database.
 
-## Security and fairness invariants
+The program has not been audited. It is devnet only and mainnet is out of scope until that changes.
 
-- Only the configured admin can initialize and delegate shared game accounts.
-- A miner can spend only the SOL represented by its program-owned Miner account.
-- Miner authority is checked on funding, deployment, checkpointing, undelegation, and claims.
-- Every deploy includes `expected_nonce`; stale or replayed transactions fail.
-- Masks must be nonzero and limited to 25 bits.
-- A miner pays for a square at most once per round.
-- Board timestamps, not ER slot numbers or browser time, decide phases.
-- Randomness is requested only after the deadline and delivered through `#[vrf_callback]` scoped identity authentication.
-- The callback is bound to the current round and request nonce and is idempotent.
-- Random draws use domain separation and rejection sampling instead of biased modulo-only sampling.
-- Cancellation is allowed only after the fixed VRF timeout and produces refunds rather than a reroll.
-- Reward settlement uses checked integer arithmetic.
-- Owners may checkpoint immediately. A permissionless caller may checkpoint only during the final 12 hours of the 24-hour claim window and receives the reserved 10,000-lamport checkpoint fee.
-- Admin fees are program-accounted and can be withdrawn only by the fixed fee collector.
-- Client deployment reports are verified against on-chain transaction events before entering the database.
+## Repo layout
 
-The program has not received an independent audit. Mainnet deployment is out of scope until a dedicated security review, adversarial economic tests, and live ER soak test are complete.
-
-## Account lifecycle
-
-### Bootstrap
-
-1. Deploy the BlitzMine program to Solana.
-2. Call `initialize` with the fixed admin authority.
-3. Start the backend with its admin signer and MagicBlock endpoints.
-4. The lifecycle manager checks and delegates Treasury, Round 0, and Board, then prepares and delegates Round 1.
-
-### First player deploy
-
-1. The wallet calls `fund_miner` on base Solana.
-2. The wallet calls `delegate_miner` on base Solana.
-3. The client waits for Magic Router to report the Miner as delegated.
-4. The client reads the Miner state from its ER.
-5. The wallet signs `deploy(amount, mask, expected_nonce)` for the ER.
-
-### Later rounds
-
-1. The owner checkpoints the previous resolved round on the ER.
-2. If the session has enough SOL, the next deploy reuses the delegated Miner.
-3. If it does not, the client commit-undelegates the settled Miner, funds the deficit on base, and delegates it again.
-
-### Claim
-
-1. Checkpoint the latest resolved round.
-2. Commit-undelegate the Miner.
-3. Wait until the updated Miner is visible on base Solana.
-4. Call `claim_sol` on base Solana.
-
-The current game UI wires funding, delegation, deployment, checkpoint, automatic refill, undelegation, and base-layer cash-out. The program lifecycle now passes locally against a real Ephemeral Rollup and VRF oracle; devnet validation remains required before release.
-
-## Repository layout
-
-```text
-program/         Anchor program, IDL, tests, and generated SBF artifact
-backend/         NestJS lifecycle manager, indexer, REST API, WebSocket gateway
-frontend/        Next.js game client and Privy wallet integration
-infrastructure/  Local Postgres and Redis configuration
+```
+program/         Anchor program, tests, and the local MagicBlock runner
+backend/         NestJS crank, indexer, REST API, WebSocket gateway
+frontend/        Next.js client and Privy wallet integration
+infrastructure/  Docker and k8s config
 ```
 
-Program ID: `CVud2PiM4hYk2YkDa2DZ2dnJwd9gVCXZFJP18DzE1r4F`
+## Running it
 
-Admin and fee collector: `2W6NfyAnBghnUrksXxaQukyhVsH84YxmyTKxLXQiWM4M`
+You need Bun, Rust, Anchor 0.32.1, and the Solana CLI with `cargo build-sbf`.
 
-The keypair JSON files are local secrets and are ignored by Git. Never commit or paste them.
-
-## Runtime configuration
-
-Backend variables:
-
-```dotenv
-SOLANA_CLUSTER=devnet
-SOLANA_RPC_URL=https://api.devnet.solana.com
-SOLANA_WS_URL=wss://api.devnet.solana.com
-PROGRAM_ID=CVud2PiM4hYk2YkDa2DZ2dnJwd9gVCXZFJP18DzE1r4F
-MAGIC_ROUTER_URL=https://devnet-router.magicblock.app
-EPHEMERAL_RPC_URL=https://devnet-as.magicblock.app
-EPHEMERAL_WS_URL=wss://devnet-as.magicblock.app
-EPHEMERAL_VALIDATOR=MAS1Dt9qreoRMQ14YQuhg8UTZMMzDdKhmkZMECCzk57
-ADMIN_KEYPAIR=<base58 secret key or JSON byte array>
-```
-
-Frontend variables:
-
-```dotenv
-NEXT_PUBLIC_API_URL=http://localhost:3001
-NEXT_PUBLIC_WS_URL=ws://localhost:3001
-NEXT_PUBLIC_SOLANA_CLUSTER=devnet
-NEXT_PUBLIC_SOLANA_RPC_URL=https://api.devnet.solana.com
-NEXT_PUBLIC_PROGRAM_ID=CVud2PiM4hYk2YkDa2DZ2dnJwd9gVCXZFJP18DzE1r4F
-NEXT_PUBLIC_PRIVY_APP_ID=<privy app id>
-NEXT_PUBLIC_ALLOW_NON_MAINNET_IN_PRODUCTION=true
-```
-
-Copy [`backend/.env.example`](backend/.env.example) and [`frontend/.env.example`](frontend/.env.example) before starting services. Database and Redis variables are also required.
-
-## Local commands
-
-Program:
+### Program tests
 
 ```bash
 cd program
-cargo test --package blitzmine --lib
-anchor idl build --skip-lint
-cargo build-sbf --tools-version v1.53 --sbf-out-dir target/deploy
-anchor test --skip-build
+cargo test --lib
 ```
 
-Complete local protocol cycle:
+### Full protocol cycle against a real rollup
 
 ```bash
 cd program
@@ -214,99 +118,81 @@ bun install
 bun run cycle:local
 ```
 
-This one command builds the program, starts a clean Solana validator, MagicBlock Ephemeral Rollup, Magic Router, and local VRF oracle, then runs two independent miners through funding, delegation, competing deployment, replay rejection, authenticated VRF settlement, exact payout checks, checkpointing, base-layer commitment, undelegation, and cash-out. It uses a five-second local-only round while the normal program remains fixed at 60 seconds. No production keypair, database, backend, frontend, or Privy credential is required.
+This is the interesting one. It builds the program, starts a clean validator, an Ephemeral Rollup, Magic Router and a local VRF oracle, then runs two miners through funding, delegation, competing deploys, replay rejection, VRF settlement, exact payout checks, checkpointing, commit back to base, undelegation and cash out.
 
-The command requires Bun, Rust, Anchor 0.32.1, Solana CLI with `cargo build-sbf`, and ports 6699, 6700, 7799, 7800, 8899, and 8900. It downloads the pinned MagicBlock local validator package on first use. A successful run ends with `Full cycle passed` and writes transaction evidence to `program/.local-e2e/result.json`. Service logs are written to `program/.local-e2e/logs`.
+It needs ports 6699, 6700, 7799, 7800, 8899 and 8900. A successful run prints `Full cycle passed` and writes the transaction evidence to `program/.local-e2e/result.json`.
 
-Complete local browser stack:
+Rounds are 5 seconds in this mode so the test does not take forever. The real program stays at 60.
+
+### Whole stack in a browser
 
 ```bash
 bun run dev:local
 ```
 
-This starts a clean local Solana validator, Ephemeral Rollup, Magic Router, scoped VRF oracle, PostgreSQL, Redis, backend, and frontend. It initializes and delegates the shared game accounts automatically and keeps the stack running until `Ctrl+C`. The authenticated local faucet funds connected test wallets only when the backend uses a loopback RPC and `NODE_ENV` is not production.
+Starts a local validator, rollup, router, VRF oracle, Postgres, Redis, backend and frontend, and delegates the shared accounts for you. You need Privy credentials in `backend/.env` and `frontend/.env.local` first, and `http://localhost:3000` allowed in the Privy dashboard.
 
-Before running it, set matching Privy credentials in the ignored `backend/.env` and `frontend/.env.local` files and allow `http://localhost:3000` and `http://127.0.0.1:3000` in the Privy dashboard. Use two browser profiles with separate Solana wallets for the multiplayer cycle. Browser rounds last 60 seconds; the automated protocol runner keeps its separate five-second build.
+### Backend and frontend on their own
+
+```bash
+cd backend && bun install && bun run build && bun run test
+cd frontend && bun install && bunx tsc --noEmit && bun run test && bun run build
+```
+
+## Config
 
 Backend:
 
-```bash
-cd backend
-bun install
-bun run build
-bun run test -- --runInBand
+```dotenv
+SOLANA_CLUSTER=devnet
+SOLANA_RPC_URL=https://api.devnet.solana.com
+PROGRAM_ID=CVud2PiM4hYk2YkDa2DZ2dnJwd9gVCXZFJP18DzE1r4F
+MAGIC_ROUTER_URL=https://devnet-router.magicblock.app
+EPHEMERAL_RPC_URL=https://devnet-as.magicblock.app
+EPHEMERAL_VALIDATOR=MAS1Dt9qreoRMQ14YQuhg8UTZMMzDdKhmkZMECCzk57
+ADMIN_KEYPAIR=<base58 secret key or JSON byte array>
+DATABASE_URL=...
+REDIS_URL=...
 ```
 
 Frontend:
 
-```bash
-cd frontend
-bun install
-bunx tsc --noEmit
-bun run test
-bun run build
+```dotenv
+NEXT_PUBLIC_API_URL=https://blitz-mine.up.railway.app
+NEXT_PUBLIC_WS_URL=wss://blitz-mine.up.railway.app
+NEXT_PUBLIC_SOLANA_CLUSTER=devnet
+NEXT_PUBLIC_SOLANA_RPC_URL=https://api.devnet.solana.com
+NEXT_PUBLIC_PROGRAM_ID=CVud2PiM4hYk2YkDa2DZ2dnJwd9gVCXZFJP18DzE1r4F
+NEXT_PUBLIC_PRIVY_APP_ID=<privy app id>
 ```
 
-## Verified state on August 7, 2026
+Running in production against anything other than mainnet needs `ALLOW_NON_MAINNET_IN_PRODUCTION=true` on the backend and `NEXT_PUBLIC_ALLOW_NON_MAINNET_IN_PRODUCTION=true` on the frontend. Both services refuse to boot otherwise, on purpose.
 
-- Rust unit tests: 5 passed, including randomness bounds and lamport-conservation properties.
-- Anchor base-layer integration tests: initialize, prepare next round, and fund Miner passed on a fresh local validator.
-- Anchor IDL generation passed.
-- SBF compilation passed with Solana platform tools v1.53.
-- Backend build passed.
-- Backend tests: 55 tests across 13 suites passed.
-- Frontend type-check passed.
-- Frontend tests: 31 passed, including exact instruction encoding, session account flow, resolution, settlement state, and reveal scheduling.
-- Frontend production build passed without requiring a Privy credential at prerender time.
-- Full local MagicBlock cycle passed with two fresh miners, a real local ER, Magic Router, scoped VRF callback, state commitment, undelegation, and base-layer claim.
-- The local test proved the stale-nonce replay guard and exact 50,000,000-lamport deployment and payout accounting.
-- Prisma validation and client generation passed against the SOL-only schema and clean initial migration.
-- The repository source, migrations, manifests, infrastructure, filenames, and public assets contain no legacy product modules or branding.
+Keypair files are local secrets and are gitignored. Do not commit them.
 
-Devnet deployment, cancellation-path integration, and multi-round soak validation remain release blockers.
+## Tests
 
-## Remaining implementation plan
+| | |
+|---|---|
+| Rust unit tests | 5 |
+| Backend | 55 across 13 suites |
+| Frontend | 31 |
 
-### Release blocker 1: devnet deployment and soak test
+The Rust ones cover account sizes, randomness bounds, and a property test that settlement conserves every lamport for every total from 0 to 10,000.
 
-- Fund the program authority with devnet SOL.
-- Deploy the exact tested SBF artifact.
-- Initialize once and verify all PDA addresses.
-- Run the backend against Magic Router and one fixed devnet ER validator.
-- Run at least 20 consecutive rounds with two wallets and forced reconnects.
-- Verify Router recovery, backend restart reconciliation, duplicate crank safety, WebSocket replay behavior, and committed base state.
+## Known gaps
 
-### Release blocker 2: finish product surface
+Being straight about what is not finished:
 
-- Validate the cash-out action across checkpoint, undelegation, Router synchronization, and `claim_sol`.
-- Add an in-product rules and fairness panel.
-- Show transaction links for base funding, delegation, deploy, resolution, and claims.
-- Add clear states for Router unavailable, ER synchronization, insufficient wallet balance, user rejection, and timed-out delegation.
-- Run responsive and wallet testing in Chromium, Safari, and a mobile viewport.
+- The indexer never writes `Reward` rows, so profile and leaderboard stats show 0 wins even after you win. The game itself settles correctly, it is only that stats surface that is wrong.
+- Chat reactions are broadcast by the server but the client has no handler for the event, so they do not show up live.
+- The backend issues a refresh token but there is no route to redeem it, so the session just expires after 15 minutes and you sign in again.
+- `program/programs/blitzmine/src/instructions/close.rs` is dead code. It is not in the module tree and does not compile. Closing expired rounds and sweeping dust into the motherlode is still to do.
+- `infrastructure/docker/Dockerfile.program` pins Anchor 0.30.1 and cannot build this program. Use the local runner instead.
 
-### Release blocker 3: security and submission
+## Links
 
-- Add property tests for conservation of lamports across winning, empty-square, jackpot, cancellation, expiry, and rounding cases.
-- Add adversarial tests for replay, wrong authority, early reset, duplicate callback, wrong nonce, invalid masks, pre-created rounds, double checkpoint, and premature bot checkpoint.
-- Add a full ER cancellation test that withholds VRF fulfillment, crosses the timeout, commits the canceled round, and proves both miners recover principal.
-- Add an idempotent expired-round sweep that moves rounding dust and unclaimed payouts into the motherlode before committed Round accounts are closed.
-- Pin deployment artifact hashes and record deployed program data.
-- Remove local secrets and generated ledgers from Git status.
-- Produce a 60 to 90 second demo showing concurrent players, ER latency, authenticated VRF, live chat, payout, and base-layer commitment.
-- Prepare the public repository, live link, architecture image, and submission copy.
-
-## Definition of done
-
-The project is submission-ready only when a fresh wallet can fund, delegate, deploy, see a shared round resolve, checkpoint, and cash out without manual account repair; a second wallet can compete in the same round; the backend can restart without corrupting lifecycle state; a full local ER test and a multi-round devnet soak test pass; and the public repository contains no secret key material.
-
-## Primary technical references
-
-- [Ephemeral Rollup architecture](https://docs.magicblock.gg/pages/ephemeral-rollups-ers/introduction/ephemeral-rollup)
-- [Local MagicBlock development](https://docs.magicblock.gg/pages/ephemeral-rollups-ers/how-to-guide/local-development)
+- [Ephemeral Rollups](https://docs.magicblock.gg/pages/ephemeral-rollups-ers/introduction/ephemeral-rollup)
 - [VRF security](https://docs.magicblock.gg/pages/verifiable-randomness-functions-vrfs/introduction/security)
-- [VRF best practices](https://docs.magicblock.gg/pages/verifiable-randomness-functions-vrfs/how-to-guide/best-practices)
-- [Magic Actions atomicity and troubleshooting](https://docs.magicblock.gg/pages/ephemeral-rollups-ers/magic-actions/troubleshooting)
-- [MagicBlock security and audits](https://docs.magicblock.gg/pages/overview/additional-information/security-and-audits)
-- [MagicBlock engine examples](https://github.com/magicblock-labs/magicblock-engine-examples)
 - [Ephemeral Rollups SDK](https://github.com/magicblock-labs/ephemeral-rollups-sdk)
 - [MagicBlock VRF program](https://github.com/magicblock-labs/solana-vrf)
