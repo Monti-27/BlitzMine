@@ -37,11 +37,11 @@ export function AppHeader() {
           aria-label="BlitzMine home"
           className="group flex items-center focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/70 focus-visible:ring-offset-2 focus-visible:ring-offset-background rounded-lg"
         >
-          {/* Logo artwork is solid black; invert renders it white on the dark shell. */}
+          {/* Logo carries its own white-to-grey gradient, so no invert filter here. */}
           <img
             src="/blitz-mine-logo.svg"
             alt="BlitzMine"
-            className="h-12 w-auto select-none invert transition-opacity duration-200 group-hover:opacity-80"
+            className="h-16 w-auto select-none transition-opacity duration-200 group-hover:opacity-80"
             draggable={false}
           />
         </Link>
