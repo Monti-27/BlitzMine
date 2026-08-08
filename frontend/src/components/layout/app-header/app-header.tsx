@@ -41,7 +41,7 @@ export function AppHeader() {
           <img
             src="/blitz-mine-logo.svg"
             alt="BlitzMine"
-            className="h-16 w-auto select-none transition-opacity duration-200 group-hover:opacity-80"
+            className="h-20 w-auto select-none transition-opacity duration-200 group-hover:opacity-80"
             draggable={false}
           />
         </Link>
