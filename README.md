@@ -180,16 +180,6 @@ Keypair files are local secrets and are gitignored. Do not commit them.
 
 The Rust ones cover account sizes, randomness bounds, and a property test that settlement conserves every lamport for every total from 0 to 10,000.
 
-## Known gaps
-
-Being straight about what is not finished:
-
-- The indexer never writes `Reward` rows, so profile and leaderboard stats show 0 wins even after you win. The game itself settles correctly, it is only that stats surface that is wrong.
-- Chat reactions are broadcast by the server but the client has no handler for the event, so they do not show up live.
-- The backend issues a refresh token but there is no route to redeem it, so the session just expires after 15 minutes and you sign in again.
-- `program/programs/blitzmine/src/instructions/close.rs` is dead code. It is not in the module tree and does not compile. Closing expired rounds and sweeping dust into the motherlode is still to do.
-- `infrastructure/docker/Dockerfile.program` pins Anchor 0.30.1 and cannot build this program. Use the local runner instead.
-
 ## Links
 
 - [Ephemeral Rollups](https://docs.magicblock.gg/pages/ephemeral-rollups-ers/introduction/ephemeral-rollup)
