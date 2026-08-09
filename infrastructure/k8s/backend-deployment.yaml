@@ -1,0 +1,57 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: blitzmine-backend
+  labels:
+    app: blitzmine-backend
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: blitzmine-backend
+  template:
+    metadata:
+      labels:
+        app: blitzmine-backend
+    spec:
+      containers:
+        - name: blitzmine-backend
+          image: blitzmine-backend:latest
+          ports:
+            - containerPort: 3001
+          envFrom:
+            - secretRef:
+                name: blitzmine-secrets
+            - configMapRef:
+                name: blitzmine-config
+          resources:
+            requests:
+              memory: '256Mi'
+              cpu: '250m'
+            limits:
+              memory: '512Mi'
+              cpu: '500m'
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: 3001
+            initialDelaySeconds: 10
+            periodSeconds: 10
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: 3001
+            initialDelaySeconds: 30
+            periodSeconds: 30
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: blitzmine-backend
+spec:
+  selector:
+    app: blitzmine-backend
+  ports:
+    - port: 80
+      targetPort: 3001
+  type: ClusterIP

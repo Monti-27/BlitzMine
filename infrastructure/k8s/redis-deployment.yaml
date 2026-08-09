@@ -1,0 +1,40 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: blitzmine-redis
+  labels:
+    app: blitzmine-redis
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: blitzmine-redis
+  template:
+    metadata:
+      labels:
+        app: blitzmine-redis
+    spec:
+      containers:
+        - name: redis
+          image: redis:7-alpine
+          ports:
+            - containerPort: 6379
+          resources:
+            requests:
+              memory: '128Mi'
+              cpu: '100m'
+            limits:
+              memory: '256Mi'
+              cpu: '250m'
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: blitzmine-redis
+spec:
+  selector:
+    app: blitzmine-redis
+  ports:
+    - port: 6379
+      targetPort: 6379
+  type: ClusterIP

@@ -1,0 +1,61 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: blitzmine-postgres
+  labels:
+    app: blitzmine-postgres
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: blitzmine-postgres
+  template:
+    metadata:
+      labels:
+        app: blitzmine-postgres
+    spec:
+      containers:
+        - name: postgres
+          image: postgres:16-alpine
+          ports:
+            - containerPort: 5432
+          envFrom:
+            - secretRef:
+                name: blitzmine-db-secrets
+          volumeMounts:
+            - name: postgres-storage
+              mountPath: /var/lib/postgresql/data
+          resources:
+            requests:
+              memory: '256Mi'
+              cpu: '250m'
+            limits:
+              memory: '1Gi'
+              cpu: '500m'
+      volumes:
+        - name: postgres-storage
+          persistentVolumeClaim:
+            claimName: blitzmine-postgres-pvc
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: blitzmine-postgres
+spec:
+  selector:
+    app: blitzmine-postgres
+  ports:
+    - port: 5432
+      targetPort: 5432
+  type: ClusterIP
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: blitzmine-postgres-pvc
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 10Gi
