@@ -1,0 +1,14 @@
+FROM rust:1.75-slim AS builder
+
+RUN apt-get update && apt-get install -y pkg-config libssl-dev libudev-dev && rm -rf /var/lib/apt/lists/*
+RUN sh -c "$(curl -sSfL https://release.solana.com/v1.18.4/install)"
+RUN cargo install --git https://github.com/coral-xyz/anchor avm --locked
+RUN avm install 0.30.1 && avm use 0.30.1
+
+WORKDIR /app
+COPY . .
+
+RUN anchor build
+
+FROM debian:bookworm-slim
+COPY --from=builder /app/target/deploy/*.so /deploy/
