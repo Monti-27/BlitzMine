@@ -13,6 +13,9 @@ export const metadata: Metadata = {
   icons: {
     icon: "/LOGO/favicon.png",
   },
+  other: {
+    "ory-verify": "orynth-13495533550f4b33a54177ab6683f1bb",
+  },
 };
 
 export default function RootLayout({
